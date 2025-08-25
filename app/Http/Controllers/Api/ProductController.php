@@ -6,20 +6,29 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Models\Cart;
+use App\Models\Favorite;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    public function index() { return response()->json(Product::with('category')->get()); }
-    public function show($id) { return response()->json(Product::with('category')->findOrFail($id)); }
-public function productsByCategory($categoryId)
-{
-    $products = Product::with('category')
-        ->where('category_id', $categoryId)
-        ->get();
+    public function index()
+    {
+        return response()->json(Product::with('category')->get());
+    }
+    public function show($id)
+    {
+        return response()->json(Product::with('category')->findOrFail($id));
+    }
+    public function productsByCategory($categoryId)
+    {
+        $products = Product::with('category')
+            ->where('category_id', $categoryId)
+            ->get();
 
-    return response()->json($products);
-}
+        return response()->json($products);
+    }
 
     public function store(Request $request)
     {
@@ -51,9 +60,9 @@ public function productsByCategory($categoryId)
         ]);
 
         return response()->json([
-    'message' => 'Product created successfully',
-    'product' => $product
-], 201);
+            'message' => 'Product created successfully',
+            'product' => $product
+        ], 201);
     }
 
     public function update(Request $request, $id)
@@ -91,6 +100,59 @@ public function productsByCategory($categoryId)
         ]);
 
         return response()->json($product);
+    }
+    // Add to favorite
+    public function addFavorite($productId)
+    {
+        $favorite = Favorite::updateOrCreate([
+            'user_id' => Auth::id(),
+            'product_id' => $productId,
+        ]);
+
+        return response()->json(['message' => 'Added to favorites', 'favorite' => $favorite]);
+    }
+    public function favorites(Request $request)
+    {
+        $user = $request->user();
+        $favorites = $user->favorites()->with('product')->get();
+        return response()->json($favorites);
+    }
+
+    // Remove from favorite
+    public function removeFavorite($productId)
+    {
+        Favorite::where('user_id', Auth::id())
+            ->where('product_id', $productId)
+            ->delete();
+
+        return response()->json(['message' => 'Removed from favorites']);
+    }
+
+    // Add to cart
+    public function addToCart(Request $request, $productId)
+    {
+        $cart = Cart::updateOrCreate(
+            ['user_id' => Auth::id(), 'product_id' => $productId],
+            ['quantity' => $request->quantity ?? 1]
+        );
+
+        return response()->json(['message' => 'Added to cart', 'cart' => $cart]);
+    }
+    public function cart(Request $request)
+    {
+        $user = $request->user();
+        $cartItems = $user->cart()->with('product')->get();
+        return response()->json($cartItems);
+    }
+
+    // Remove from cart
+    public function removeFromCart($productId)
+    {
+        Cart::where('user_id', Auth::id())
+            ->where('product_id', $productId)
+            ->delete();
+
+        return response()->json(['message' => 'Removed from cart']);
     }
 
     public function destroy($id)

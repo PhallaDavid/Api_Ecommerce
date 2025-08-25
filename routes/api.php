@@ -13,13 +13,14 @@ Route::post('/banners', [BannerController::class, 'store']);
 Route::get('/banners', [BannerController::class, 'index']);
 Route::put('/banners/{id}', [BannerController::class, 'update']);
 Route::delete('/banners/{id}', [BannerController::class, 'destroy']);
-
+Route::post('/send-otp', [AuthController::class, 'sendOtp']);
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 
 // Categories
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{id}', [CategoryController::class, 'show']);
 Route::post('/categories', [CategoryController::class, 'store']);
-Route::put('/categories/{id}', [CategoryController::class, 'update']);  // fixed
+Route::put('/categories/{id}', [CategoryController::class, 'update']);
 Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
 
 // Products
@@ -29,6 +30,14 @@ Route::post('/products', [ProductController::class, 'store']);
 Route::put('/products/{id}', [ProductController::class, 'update']);
 Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 Route::get('products/category/{id}', [ProductController::class, 'productsByCategory']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('products/{id}/favorite', [ProductController::class, 'addFavorite']);
+    Route::delete('products/{id}/favorite', [ProductController::class, 'removeFavorite']);
+    Route::middleware('auth:sanctum')->get('/favorites', [ProductController::class, 'favorites']);
+    Route::post('products/{id}/cart', [ProductController::class, 'addToCart']);
+    Route::delete('products/{id}/cart', [ProductController::class, 'removeFromCart']);
+    Route::middleware('auth:sanctum')->get('/cart', [ProductController::class, 'cart']);
+});
 
 
 // Protected routes
