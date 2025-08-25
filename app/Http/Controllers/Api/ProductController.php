@@ -52,9 +52,20 @@ public function store(Request $request)
         'name' => 'required|string',
         'description' => 'nullable|string',
         'price' => 'required|numeric',
+        'sale_price' => 'nullable|numeric',
         'stock' => 'required|integer',
         'category_id' => 'nullable|exists:categories,id',
         'images.*' => 'sometimes|image|max:2048',
+        'sku' => 'nullable|string',
+        'barcode' => 'nullable|string',
+        'featured' => 'nullable|boolean',
+        'is_active' => 'nullable|boolean',
+        'weight' => 'nullable|numeric',
+        'length' => 'nullable|numeric',
+        'width' => 'nullable|numeric',
+        'height' => 'nullable|numeric',
+        'rating' => 'nullable|numeric',
+        'sold_count' => 'nullable|integer',
         'promotion_start' => 'nullable|date',
         'promotion_end' => 'nullable|date|after_or_equal:promotion_start',
     ]);
@@ -80,18 +91,33 @@ public function store(Request $request)
         'slug' => $slug,
         'description' => $request->description,
         'price' => $request->price,
+        'sale_price' => $request->sale_price,
         'stock' => $request->stock,
         'category_id' => $request->category_id,
         'images' => $imagePaths,
+        'sku' => $request->sku,
+        'barcode' => $request->barcode,
+        'featured' => $request->featured ?? 0,
+        'is_active' => $request->is_active ?? 1,
+        'weight' => $request->weight,
+        'length' => $request->length,
+        'width' => $request->width,
+        'height' => $request->height,
+        'rating' => $request->rating ?? 0,
+        'sold_count' => $request->sold_count ?? 0,
         'promotion_start' => $request->promotion_start,
         'promotion_end' => $request->promotion_end,
     ]);
+
+    // Load category relation
+    $product->load('category');
 
     return response()->json([
         'message' => 'Product created successfully',
         'product' => $product
     ], 201);
 }
+
 
 
     public function update(Request $request, $id)

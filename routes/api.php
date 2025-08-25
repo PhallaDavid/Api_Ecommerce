@@ -24,6 +24,7 @@ Route::get('/categories/{id}', [CategoryController::class, 'show']);
 Route::post('/categories', [CategoryController::class, 'store']);
 Route::put('/categories/{id}', [CategoryController::class, 'update']);
 Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
+Route::get('/products/search', [App\Http\Controllers\Api\ProductSearchController::class, 'search']);
 
 // Products
 Route::get('/products', [ProductController::class, 'index']);
