@@ -1,0 +1,96 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Product;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+
+class ProductController extends Controller
+{
+    public function index() { return response()->json(Product::with('category')->get()); }
+    public function show($id) { return response()->json(Product::with('category')->findOrFail($id)); }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric',
+            'stock' => 'required|integer',
+            'category_id' => 'nullable|exists:categories,id',
+            'images.*' => 'sometimes|image|max:2048',
+        ]);
+
+        $imagePaths = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('products', 'public');
+                $imagePaths[] = Storage::url($path);
+            }
+        }
+
+        $product = Product::create([
+            'name' => $request->name,
+            'slug' => Str::slug($request->name),
+            'description' => $request->description,
+            'price' => $request->price,
+            'stock' => $request->stock,
+            'category_id' => $request->category_id,
+            'images' => $imagePaths,
+        ]);
+
+        return response()->json($product, 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+        $request->validate([
+            'name' => 'sometimes|required|string',
+            'description' => 'nullable|string',
+            'price' => 'sometimes|required|numeric',
+            'stock' => 'sometimes|required|integer',
+            'category_id' => 'nullable|exists:categories,id',
+            'images.*' => 'sometimes|image|max:2048',
+        ]);
+
+        $imagePaths = $product->images ?? [];
+        if ($request->hasFile('images')) {
+            foreach ($imagePaths as $old) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $old));
+            }
+            $imagePaths = [];
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('products', 'public');
+                $imagePaths[] = Storage::url($path);
+            }
+        }
+
+        $product->update([
+            'name' => $request->name ?? $product->name,
+            'slug' => $request->name ? Str::slug($request->name) : $product->slug,
+            'description' => $request->description ?? $product->description,
+            'price' => $request->price ?? $product->price,
+            'stock' => $request->stock ?? $product->stock,
+            'category_id' => $request->category_id ?? $product->category_id,
+            'images' => $imagePaths,
+        ]);
+
+        return response()->json($product);
+    }
+
+    public function destroy($id)
+    {
+        $product = Product::findOrFail($id);
+        if ($product->images) {
+            foreach ($product->images as $img) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $img));
+            }
+        }
+        $product->delete();
+        return response()->json(['message' => 'Product deleted successfully']);
+    }
+}
