@@ -12,6 +12,14 @@ class ProductController extends Controller
 {
     public function index() { return response()->json(Product::with('category')->get()); }
     public function show($id) { return response()->json(Product::with('category')->findOrFail($id)); }
+public function productsByCategory($categoryId)
+{
+    $products = Product::with('category')
+        ->where('category_id', $categoryId)
+        ->get();
+
+    return response()->json($products);
+}
 
     public function store(Request $request)
     {
@@ -42,7 +50,10 @@ class ProductController extends Controller
             'images' => $imagePaths,
         ]);
 
-        return response()->json($product, 201);
+        return response()->json([
+    'message' => 'Product created successfully',
+    'product' => $product
+], 201);
     }
 
     public function update(Request $request, $id)
