@@ -17,10 +17,12 @@ class ProductController extends Controller
     {
         return response()->json(Product::with('category')->get());
     }
+
     public function show($id)
     {
         return response()->json(Product::with('category')->findOrFail($id));
     }
+
     public function productsByCategory($categoryId)
     {
         $products = Product::with('category')
@@ -29,41 +31,68 @@ class ProductController extends Controller
 
         return response()->json($products);
     }
+public function promotion()
+{
+    $now = now();
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric',
-            'stock' => 'required|integer',
-            'category_id' => 'nullable|exists:categories,id',
-            'images.*' => 'sometimes|image|max:2048',
-        ]);
+    $products = Product::whereNotNull('promotion_start')
+        ->whereNotNull('promotion_end')
+        ->where('promotion_start', '<=', $now)
+        ->where('promotion_end', '>=', $now)
+        ->with('category')
+        ->get();
 
-        $imagePaths = [];
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $path = $image->store('products', 'public');
-                $imagePaths[] = Storage::url($path);
-            }
+    return response()->json($products);
+}
+
+
+public function store(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string',
+        'description' => 'nullable|string',
+        'price' => 'required|numeric',
+        'stock' => 'required|integer',
+        'category_id' => 'nullable|exists:categories,id',
+        'images.*' => 'sometimes|image|max:2048',
+        'promotion_start' => 'nullable|date',
+        'promotion_end' => 'nullable|date|after_or_equal:promotion_start',
+    ]);
+
+    $imagePaths = [];
+    if ($request->hasFile('images')) {
+        foreach ($request->file('images') as $image) {
+            $path = $image->store('products', 'public');
+            $imagePaths[] = Storage::url($path);
         }
-
-        $product = Product::create([
-            'name' => $request->name,
-            'slug' => Str::slug($request->name),
-            'description' => $request->description,
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'category_id' => $request->category_id,
-            'images' => $imagePaths,
-        ]);
-
-        return response()->json([
-            'message' => 'Product created successfully',
-            'product' => $product
-        ], 201);
     }
+
+    // Generate a unique slug
+    $slug = Str::slug($request->name);
+    $originalSlug = $slug;
+    $counter = 1;
+    while (Product::where('slug', $slug)->exists()) {
+        $slug = $originalSlug . '-' . $counter++;
+    }
+
+    $product = Product::create([
+        'name' => $request->name,
+        'slug' => $slug,
+        'description' => $request->description,
+        'price' => $request->price,
+        'stock' => $request->stock,
+        'category_id' => $request->category_id,
+        'images' => $imagePaths,
+        'promotion_start' => $request->promotion_start,
+        'promotion_end' => $request->promotion_end,
+    ]);
+
+    return response()->json([
+        'message' => 'Product created successfully',
+        'product' => $product
+    ], 201);
+}
+
 
     public function update(Request $request, $id)
     {
@@ -75,6 +104,8 @@ class ProductController extends Controller
             'stock' => 'sometimes|required|integer',
             'category_id' => 'nullable|exists:categories,id',
             'images.*' => 'sometimes|image|max:2048',
+            'promotion_start' => 'nullable|date',
+            'promotion_end' => 'nullable|date|after_or_equal:promotion_start',
         ]);
 
         $imagePaths = $product->images ?? [];
@@ -97,11 +128,12 @@ class ProductController extends Controller
             'stock' => $request->stock ?? $product->stock,
             'category_id' => $request->category_id ?? $product->category_id,
             'images' => $imagePaths,
+            'promotion_start' => $request->promotion_start ?? $product->promotion_start,
+            'promotion_end' => $request->promotion_end ?? $product->promotion_end,
         ]);
 
         return response()->json($product);
     }
-    // Add to favorite
     public function addFavorite($productId)
     {
         $favorite = Favorite::updateOrCreate([
@@ -111,6 +143,7 @@ class ProductController extends Controller
 
         return response()->json(['message' => 'Added to favorites', 'favorite' => $favorite]);
     }
+
     public function favorites(Request $request)
     {
         $user = $request->user();
@@ -138,6 +171,7 @@ class ProductController extends Controller
 
         return response()->json(['message' => 'Added to cart', 'cart' => $cart]);
     }
+
     public function cart(Request $request)
     {
         $user = $request->user();
