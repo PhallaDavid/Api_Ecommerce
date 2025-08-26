@@ -42,37 +42,37 @@ class AuthController extends Controller
             'user'    => $user,
         ], 201);
     }
-public function login(Request $request)
-{
-    // Validate input
-    $request->validate([
-        'email'    => 'required|string|email',
-        'password' => 'required|string',
-    ]);
+    public function login(Request $request)
+    {
+        // Validate input
+        $request->validate([
+            'email'    => 'required|string|email',
+            'password' => 'required|string',
+        ]);
 
-    if (!Auth::attempt($request->only('email', 'password'))) {
-        throw ValidationException::withMessages([
-            'email' => ['The provided credentials are incorrect.'],
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        $user  = Auth::user();
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Login successful',
+            'token'   => $token,
+            'user'    => [
+                'id'            => $user->id,
+                'name'          => $user->name,
+                'email'         => $user->email,
+                'verify_status' => $user->verify_status,
+                'created_at'    => $user->created_at,
+                'updated_at'    => $user->updated_at,
+            ],
         ]);
     }
-
-    $user  = Auth::user();
-    $token = $user->createToken('auth_token')->plainTextToken;
-
-    return response()->json([
-        'status'  => true,
-        'message' => 'Login successful',
-        'token'   => $token,
-        'user'    => [
-            'id'            => $user->id,
-            'name'          => $user->name,
-            'email'         => $user->email,
-            'verify_status' => $user->verify_status, // pending or completed
-            'created_at'    => $user->created_at,
-            'updated_at'    => $user->updated_at,
-        ],
-    ]);
-}
 
     public function logout(Request $request)
     {
@@ -139,7 +139,12 @@ public function login(Request $request)
             return response()->json(['message' => 'Invalid or expired OTP'], 400);
         }
         $otp->delete();
+        $user->verify_status = 'complete';
+        $user->save();
 
-        return response()->json(['message' => 'OTP verified successfully']);
+        return response()->json([
+            'message' => 'OTP verified successfully',
+            'verify_status' => $user->verify_status,
+        ]);
     }
 }

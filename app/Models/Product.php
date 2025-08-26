@@ -9,15 +9,23 @@ class Product extends Model
 {
     use HasFactory;
 
-protected $fillable = [
-    'name', 'slug', 'description', 'price', 'sale_price', 'stock', 'in_stock',
-    'category_id', 'images', 'sku', 'barcode', 'featured', 'is_active',
-    'weight', 'length', 'width', 'height', 'rating', 'sold_count',
-    'promotion_start', 'promotion_end'
-];
+    protected $fillable = [
+        'name', 'slug', 'description', 'price', 'sale_price', 'stock',
+        'category_id', 'images', 'sku', 'barcode', 'featured', 'is_active',
+        'weight', 'length', 'width', 'height', 'rating', 'sold_count',
+        'promotion_start', 'promotion_end'
+    ];
 
+    protected $casts = [
+        'images' => 'array',
+        'featured' => 'boolean',
+        'is_active' => 'boolean',
+        'promotion_start' => 'datetime',
+        'promotion_end' => 'datetime',
+    ];
 
-    protected $casts = ['images' => 'array'];
-
-    public function category() { return $this->belongsTo(Category::class); }
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 }

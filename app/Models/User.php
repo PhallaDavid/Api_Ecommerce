@@ -35,10 +35,10 @@ class User extends Authenticatable
      *
      * @return string
      */
-    public function getVerifyStatusAttribute()
-    {
-        return $this->email_verified_at ? 'completed' : 'pending';
-    }
+    // public function getVerifyStatusAttribute()
+    // {
+    //     return $this->email_verified_at ? 'completed' : 'pending';
+    // }
 
     // User's favorites
     public function favorites()

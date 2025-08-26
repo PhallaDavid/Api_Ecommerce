@@ -9,7 +9,6 @@ class Order extends Model
 {
     use HasFactory;
 
-    // Allow mass assignment for these fields
     protected $fillable = [
         'user_id',
         'total',
@@ -18,7 +17,6 @@ class Order extends Model
         'delivery_longitude',
     ];
 
-    // Optional: cast latitude/longitude to float
     protected $casts = [
         'delivery_latitude' => 'float',
         'delivery_longitude' => 'float',
@@ -28,5 +26,10 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class);
     }
 }
