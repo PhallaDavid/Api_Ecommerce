@@ -45,18 +45,17 @@ class OrderController extends Controller
         foreach ($orderItems as $item) {
             $order->items()->create($item);
         }
-
-        // Build Telegram message
-        $message = "<b>New Order #{$order->id}</b>\n";
-        $message .= "User: {$user->name} ({$user->email})\n";
-        $message .= "Total: $total\n";
-        $message .= "Items:\n";
-
+        $message = "<b>🛒 New Order #{$order->id}</b>\n";
+        $message .= "<b>Payment Method:</b> {$request->payment_method}\n";
+        $message .= "<b>User:</b> {$user->name} ({$user->email})\n";
+        $message .= "<b>Total:</b> $total\n";
+        $message .= "<b>Items:</b>\n";
+        foreach ($order->items as $item) {
+            $message .= "• {$item->name} x{$item->quantity} - {$item->price}\n";
+        }
         foreach ($order->items as $item) {
             $message .= "- {$item->product->name} x {$item->quantity} = {$item->price}\n";
         }
-
-        // Send to Telegram
         Telegram::sendMessage(env('TELEGRAM_CHAT_ID'), $message);
 
         return response()->json([

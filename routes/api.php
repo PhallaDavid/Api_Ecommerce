@@ -9,6 +9,8 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductSearchController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\DeliveryController;
+
 
 // Auth
 Route::post('/register', [AuthController::class, 'register']);
@@ -18,6 +20,9 @@ Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 
 // Banners
 Route::apiResource('banners', BannerController::class)->except(['show']);
+Route::post('/orders/{orderId}/location', [DeliveryController::class, 'updateLocation']);
+Route::get('/orders/{orderId}/location', [DeliveryController::class, 'getLocation']);
+
 
 // Categories
 Route::apiResource('categories', CategoryController::class);
