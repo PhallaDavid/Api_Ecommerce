@@ -16,32 +16,42 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
 
-    public function register(Request $request)
-    {
-        // Validate input
-        $request->validate([
-            'name'                  => 'required|string|max:255',
-            'email'                 => 'required|string|email|max:255|unique:users',
-            'password'              => 'required|string|min:8|confirmed', // password_confirmation required
-        ]);
+public function register(Request $request)
+{
+    // Validate input
+    $request->validate([
+        'name'                  => 'required|string|max:255',
+        'email'                 => 'required|string|email|max:255|unique:users',
+        'password'              => 'required|string|min:8|confirmed', // password_confirmation required
+    ]);
 
-        // Create user
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+    // Generate OTP
+    $otp = rand(100000, 999999);
 
-        // Generate token
-        $token = $user->createToken('auth_token')->plainTextToken;
+    // Create user
+    $user = User::create([
+        'name'     => $request->name,
+        'email'    => $request->email,
+        'password' => Hash::make($request->password),
+        'otp'      => $otp, // save OTP to user table
+    ]);
 
-        return response()->json([
-            'status'  => true,
-            'message' => 'User registered successfully',
-            'token'   => $token,
-            'user'    => $user,
-        ], 201);
-    }
+    // Send OTP to user email
+    Mail::raw("Your OTP code is: $otp", function ($message) use ($user) {
+        $message->to($user->email)
+                ->subject('Verify your email with OTP');
+    });
+
+    // Generate token
+    $token = $user->createToken('auth_token')->plainTextToken;
+
+    return response()->json([
+        'status'  => true,
+        'message' => 'User registered successfully. Please verify your email with OTP.',
+        'token'   => $token,
+        'user'    => $user,
+    ], 201);
+}
     public function login(Request $request)
     {
         // Validate input

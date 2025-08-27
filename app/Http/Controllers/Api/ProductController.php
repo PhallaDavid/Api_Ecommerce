@@ -158,50 +158,60 @@ class ProductController extends Controller
 
         return response()->json($product);
     }
-    public function addFavorite($productId)
+ public function addFavorite($productId)
+{
+    $product = Product::find($productId);
+    if (!$product) {
+        return response()->json(['message' => 'Product not found'], 404);
+    }
+
+    $userId = Auth::id();
+
+    $favorite = Favorite::firstOrCreate([
+        'user_id' => $userId,
+        'product_id' => $productId,
+    ]);
+
+    return response()->json([
+        'message' => 'Added to favorites',
+        'favorite' => $favorite,
+    ], 201);
+}
+
+
+    // Remove product from favorites
+    public function removeFavorite($productId)
     {
         $userId = Auth::id();
 
-        // Check if favorite already exists
         $favorite = Favorite::where('user_id', $userId)
             ->where('product_id', $productId)
             ->first();
 
-        if ($favorite) {
+        if (!$favorite) {
             return response()->json([
-                'message' => 'Product is already in favorites',
-                'favorite' => $favorite,
-            ], 200);
+                'message' => 'Favorite not found'
+            ], 404);
         }
 
-        // Create favorite if not exists
-        $favorite = Favorite::create([
-            'user_id' => $userId,
-            'product_id' => $productId,
-        ]);
+        $favorite->delete();
 
         return response()->json([
-            'message' => 'Added to favorites',
-            'favorite' => $favorite,
-        ], 201);
+            'message' => 'Removed from favorites'
+        ], 200);
     }
 
-
+    // List all favorites for the logged-in user
     public function favorites(Request $request)
     {
         $user = $request->user();
+
         $favorites = $user->favorites()->with('product')->get();
-        return response()->json($favorites);
-    }
 
-    // Remove from favorite
-    public function removeFavorite($productId)
-    {
-        Favorite::where('user_id', Auth::id())
-            ->where('product_id', $productId)
-            ->delete();
-
-        return response()->json(['message' => 'Removed from favorites']);
+        return response()->json([
+            'message' => 'Favorites fetched successfully',
+            'favorites' => $favorites
+        ], 200);
     }
 
     public function addToCart(Request $request, $productId)
@@ -247,11 +257,18 @@ class ProductController extends Controller
 
 
     public function cart(Request $request)
-    {
-        $user = $request->user();
-        $cartItems = $user->cart()->with('product')->get();
-        return response()->json($cartItems);
+{
+    $user = $request->user();
+
+    if (!$user) {
+        return response()->json(['error' => 'User not authenticated'], 401);
     }
+
+    $cartItems = $user->cart()->with('product')->get();
+
+    return response()->json($cartItems);
+}
+
 
     // Remove from cart
     public function removeFromCart($productId)

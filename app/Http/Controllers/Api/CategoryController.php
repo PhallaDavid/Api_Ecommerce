@@ -10,9 +10,26 @@ use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
-    public function index() { return response()->json(Category::with('children')->get()); }
-    public function show($id) { return response()->json(Category::with('children')->findOrFail($id)); }
+    /**
+     * List all categories with children
+     */
+    public function index()
+    {
+        return response()->json(Category::with('children')->get());
+    }
 
+    /**
+     * Show single category by ID
+     */
+    public function show($id)
+    {
+        $category = Category::with('children')->findOrFail($id);
+        return response()->json($category);
+    }
+
+    /**
+     * Store a new category
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -23,6 +40,8 @@ class CategoryController extends Controller
         ]);
 
         $imagePaths = [];
+
+        // Only handle uploaded files if present
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
                 $path = $image->store('categories', 'public');
@@ -35,15 +54,22 @@ class CategoryController extends Controller
             'slug' => Str::slug($request->name),
             'description' => $request->description,
             'parent_id' => $request->parent_id,
-            'images' => $imagePaths,
+            'images' => $imagePaths, // safe: empty array if no files
         ]);
 
-        return response()->json($category, 201);
+        return response()->json([
+            'message' => 'Category created successfully',
+            'category' => $category
+        ], 201);
     }
 
+    /**
+     * Update an existing category
+     */
     public function update(Request $request, $id)
     {
         $category = Category::findOrFail($id);
+
         $request->validate([
             'name' => 'sometimes|required|string|unique:categories,name,' . $id,
             'description' => 'nullable|string',
@@ -52,12 +78,16 @@ class CategoryController extends Controller
         ]);
 
         $imagePaths = $category->images ?? [];
+
+        // Replace old images if new ones uploaded
         if ($request->hasFile('images')) {
+            // Delete old images
             foreach ($imagePaths as $old) {
                 $oldPath = str_replace('/storage/', '', $old);
                 Storage::disk('public')->delete($oldPath);
             }
 
+            // Store new images
             $imagePaths = [];
             foreach ($request->file('images') as $image) {
                 $path = $image->store('categories', 'public');
@@ -73,18 +103,28 @@ class CategoryController extends Controller
             'images' => $imagePaths,
         ]);
 
-        return response()->json($category);
+        return response()->json([
+            'message' => 'Category updated successfully',
+            'category' => $category
+        ]);
     }
 
+    /**
+     * Delete a category and its images
+     */
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
+
         if ($category->images) {
             foreach ($category->images as $img) {
-                Storage::disk('public')->delete(str_replace('/storage/', '', $img));
+                $path = str_replace('/storage/', '', $img);
+                Storage::disk('public')->delete($path);
             }
         }
+
         $category->delete();
+
         return response()->json(['message' => 'Category deleted successfully']);
     }
 }

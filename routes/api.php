@@ -10,8 +10,6 @@ use App\Http\Controllers\Api\ProductSearchController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\DeliveryController;
-
-
 // Auth
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
@@ -51,10 +49,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile',  [AuthController::class, 'profile']);
     Route::get('/user', fn(Request $request) => $request->user());
 
-    // Favorites & Cart
-    Route::post('products/{id}/favorite', [ProductController::class, 'addFavorite']);
-    Route::delete('products/{id}/favorite', [ProductController::class, 'removeFavorite']);
-    Route::get('/favorites', [ProductController::class, 'favorites']);
+    Route::post('products/{productId}/favorite', [ProductController::class, 'addFavorite']);
+    Route::delete('products/{productId}/favorite', [ProductController::class, 'removeFavorite']);
+    Route::get('products/favourite', [ProductController::class, 'favorites']);
+
+
     Route::post('products/{id}/cart', [ProductController::class, 'addToCart']);
     Route::delete('products/{id}/cart', [ProductController::class, 'removeFromCart']);
     Route::get('/cart', [ProductController::class, 'cart']);
