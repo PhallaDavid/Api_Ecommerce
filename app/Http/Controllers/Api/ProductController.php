@@ -70,6 +70,7 @@ class ProductController extends Controller
             'promotion_end' => 'nullable|date|after_or_equal:promotion_start',
         ]);
 
+        // Handle images
         $imagePaths = [];
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
@@ -78,12 +79,22 @@ class ProductController extends Controller
             }
         }
 
-        // Generate a unique slug
+        // Generate unique slug
         $slug = Str::slug($request->name);
         $originalSlug = $slug;
         $counter = 1;
         while (Product::where('slug', $slug)->exists()) {
             $slug = $originalSlug . '-' . $counter++;
+        }
+
+        // Calculate promotion price and discount
+        $promotionPrice = null;
+        $discountPercent = null;
+        if ($request->sale_price && $request->promotion_start && $request->promotion_end) {
+            $promotionPrice = $request->sale_price;
+            $discountPercent = $request->price > 0
+                ? round((($request->price - $request->sale_price) / $request->price) * 100)
+                : 0;
         }
 
         $product = Product::create([
@@ -92,6 +103,8 @@ class ProductController extends Controller
             'description' => $request->description,
             'price' => $request->price,
             'sale_price' => $request->sale_price,
+            'promotion_price' => $promotionPrice,
+            'discount_percent' => $discountPercent,
             'stock' => $request->stock,
             'category_id' => $request->category_id,
             'images' => $imagePaths,
@@ -108,6 +121,7 @@ class ProductController extends Controller
             'promotion_start' => $request->promotion_start,
             'promotion_end' => $request->promotion_end,
         ]);
+
         $product->load('category');
 
         return response()->json([
@@ -116,15 +130,15 @@ class ProductController extends Controller
         ], 201);
     }
 
-
-
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
+
         $request->validate([
             'name' => 'sometimes|required|string',
             'description' => 'nullable|string',
             'price' => 'sometimes|required|numeric',
+            'sale_price' => 'nullable|numeric',
             'stock' => 'sometimes|required|integer',
             'category_id' => 'nullable|exists:categories,id',
             'images.*' => 'sometimes|image|max:2048',
@@ -132,6 +146,7 @@ class ProductController extends Controller
             'promotion_end' => 'nullable|date|after_or_equal:promotion_start',
         ]);
 
+        // Handle images
         $imagePaths = $product->images ?? [];
         if ($request->hasFile('images')) {
             foreach ($imagePaths as $old) {
@@ -144,11 +159,26 @@ class ProductController extends Controller
             }
         }
 
+        // Calculate promotion price and discount
+        $price = $request->price ?? $product->price;
+        $salePrice = $request->sale_price ?? $product->sale_price;
+        $promotionPrice = null;
+        $discountPercent = null;
+        if ($salePrice && $request->promotion_start && $request->promotion_end) {
+            $promotionPrice = $salePrice;
+            $discountPercent = $price > 0
+                ? round((($price - $salePrice) / $price) * 100)
+                : 0;
+        }
+
         $product->update([
             'name' => $request->name ?? $product->name,
             'slug' => $request->name ? Str::slug($request->name) : $product->slug,
             'description' => $request->description ?? $product->description,
-            'price' => $request->price ?? $product->price,
+            'price' => $price,
+            'sale_price' => $salePrice,
+            'promotion_price' => $promotionPrice,
+            'discount_percent' => $discountPercent,
             'stock' => $request->stock ?? $product->stock,
             'category_id' => $request->category_id ?? $product->category_id,
             'images' => $imagePaths,
@@ -156,27 +186,33 @@ class ProductController extends Controller
             'promotion_end' => $request->promotion_end ?? $product->promotion_end,
         ]);
 
-        return response()->json($product);
+        $product->load('category');
+
+        return response()->json([
+            'message' => 'Product updated successfully',
+            'product' => $product
+        ]);
     }
- public function addFavorite($productId)
-{
-    $product = Product::find($productId);
-    if (!$product) {
-        return response()->json(['message' => 'Product not found'], 404);
+
+    public function addFavorite($productId)
+    {
+        $product = Product::find($productId);
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        $userId = Auth::id();
+
+        $favorite = Favorite::firstOrCreate([
+            'user_id' => $userId,
+            'product_id' => $productId,
+        ]);
+
+        return response()->json([
+            'message' => 'Added to favorites',
+            'favorite' => $favorite,
+        ], 201);
     }
-
-    $userId = Auth::id();
-
-    $favorite = Favorite::firstOrCreate([
-        'user_id' => $userId,
-        'product_id' => $productId,
-    ]);
-
-    return response()->json([
-        'message' => 'Added to favorites',
-        'favorite' => $favorite,
-    ], 201);
-}
 
 
     // Remove product from favorites
@@ -257,17 +293,17 @@ class ProductController extends Controller
 
 
     public function cart(Request $request)
-{
-    $user = $request->user();
+    {
+        $user = $request->user();
 
-    if (!$user) {
-        return response()->json(['error' => 'User not authenticated'], 401);
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        $cartItems = $user->cart()->with('product')->get();
+
+        return response()->json($cartItems);
     }
-
-    $cartItems = $user->cart()->with('product')->get();
-
-    return response()->json($cartItems);
-}
 
 
     // Remove from cart

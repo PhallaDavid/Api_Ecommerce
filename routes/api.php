@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -10,6 +9,7 @@ use App\Http\Controllers\Api\ProductSearchController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\DeliveryController;
+
 // Auth
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
@@ -18,9 +18,10 @@ Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 
 // Banners
 Route::apiResource('banners', BannerController::class)->except(['show']);
+
+// Orders & Delivery
 Route::post('/orders/{orderId}/location', [DeliveryController::class, 'updateLocation']);
 Route::get('/orders/{orderId}/location', [DeliveryController::class, 'getLocation']);
-
 
 // Categories
 Route::apiResource('categories', CategoryController::class);
@@ -30,17 +31,15 @@ Route::prefix('products')->group(function () {
     Route::get('/', [ProductController::class, 'index']);
     Route::get('/promotion', [ProductController::class, 'promotion']);
     Route::get('/search', [ProductSearchController::class, 'search']);
+
+    // **Important:** category route must come before {id}
     Route::get('/category/{id}', [ProductController::class, 'productsByCategory']);
     Route::get('/{id}', [ProductController::class, 'show']);
+
     Route::post('/', [ProductController::class, 'store']);
     Route::put('/{id}', [ProductController::class, 'update']);
     Route::delete('/{id}', [ProductController::class, 'destroy']);
 });
-
-Route::middleware('auth:sanctum')->post('/orders', [OrderController::class, 'createOrder']);
-
-Route::post('/payments/create', [PaymentController::class, 'create']);
-Route::get('/payment/status/{md5}', [PaymentController::class, 'checkStatus']);
 
 // Protected routes (require Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
@@ -49,12 +48,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile',  [AuthController::class, 'profile']);
     Route::get('/user', fn(Request $request) => $request->user());
 
+    // Favorites
     Route::post('products/{productId}/favorite', [ProductController::class, 'addFavorite']);
     Route::delete('products/{productId}/favorite', [ProductController::class, 'removeFavorite']);
-    Route::get('products/favourite', [ProductController::class, 'favorites']);
+    Route::get('products/favorites', [ProductController::class, 'favorites']);
 
-
+    // Cart
     Route::post('products/{id}/cart', [ProductController::class, 'addToCart']);
     Route::delete('products/{id}/cart', [ProductController::class, 'removeFromCart']);
     Route::get('/cart', [ProductController::class, 'cart']);
 });
+
+// Payments
+Route::post('/payments/create', [PaymentController::class, 'create']);
+Route::get('/payment/status/{md5}', [PaymentController::class, 'checkStatus']);
+
+// Create order (protected)
+Route::middleware('auth:sanctum')->post('/orders', [OrderController::class, 'createOrder']);
