@@ -10,15 +10,36 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'slug', 'description', 'price', 'sale_price', 
-        'promotion_price', 'discount_percent', // add these
-        'stock', 'category_id', 'images', 'sku', 'barcode', 
-        'featured', 'is_active', 'weight', 'length', 'width', 
-        'height', 'rating', 'sold_count', 'promotion_start', 'promotion_end'
+        'name',
+        'slug',
+        'description',
+        'price',
+        'sale_price',
+        'promotion_price',
+        'discount_percent',
+        'stock',
+        'category_id',
+        'images',
+        'sku',
+        'barcode',
+        'featured',
+        'is_active',
+        'weight',
+        'length',
+        'width',
+        'height',
+        'rating',
+        'sold_count',
+        'promotion_start',
+        'promotion_end',
+        'sizes',
+        'colors' // <-- added
     ];
 
     protected $casts = [
         'images' => 'array',
+        'sizes' => 'array',   // <-- added
+        'colors' => 'array',  // <-- added
         'featured' => 'boolean',
         'is_active' => 'boolean',
         'promotion_start' => 'datetime',

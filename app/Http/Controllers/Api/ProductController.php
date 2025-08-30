@@ -18,10 +18,10 @@ class ProductController extends Controller
         return response()->json(Product::with('category')->get());
     }
 
-    public function show($id)
-    {
-        return response()->json(Product::with('category')->findOrFail($id));
-    }
+        public function show($id)
+        {
+            return response()->json(Product::with('category')->findOrFail($id));
+        }
 
     public function productsByCategory($categoryId)
     {
@@ -68,6 +68,11 @@ class ProductController extends Controller
             'sold_count' => 'nullable|integer',
             'promotion_start' => 'nullable|date',
             'promotion_end' => 'nullable|date|after_or_equal:promotion_start',
+            // New validations
+            'sizes' => 'nullable|array',
+            'sizes.*' => 'string|max:10',
+            'colors' => 'nullable|array',
+            'colors.*' => 'string|max:20',
         ]);
 
         // Handle images
@@ -120,6 +125,8 @@ class ProductController extends Controller
             'sold_count' => $request->sold_count ?? 0,
             'promotion_start' => $request->promotion_start,
             'promotion_end' => $request->promotion_end,
+            'sizes' => $request->sizes ?? [],
+            'colors' => $request->colors ?? [],
         ]);
 
         $product->load('category');
@@ -129,6 +136,7 @@ class ProductController extends Controller
             'product' => $product
         ], 201);
     }
+
 
     public function update(Request $request, $id)
     {
@@ -184,7 +192,10 @@ class ProductController extends Controller
             'images' => $imagePaths,
             'promotion_start' => $request->promotion_start ?? $product->promotion_start,
             'promotion_end' => $request->promotion_end ?? $product->promotion_end,
+            'sizes' => $request->sizes ?? $product->sizes,
+            'colors' => $request->colors ?? $product->colors,
         ]);
+
 
         $product->load('category');
 

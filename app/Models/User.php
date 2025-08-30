@@ -12,10 +12,18 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    // Add all profile fields to fillable
     protected $fillable = [
         'name',
         'email',
         'password',
+        'phone',
+        'address',
+        'city',
+        'state',
+        'zip',
+        'avatar',
+        'images',
     ];
 
     protected $hidden = [
@@ -25,6 +33,7 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'images' => 'array', // cast images as array
     ];
 
     // Append verify_status to API responses
@@ -35,10 +44,10 @@ class User extends Authenticatable
      *
      * @return string
      */
-    // public function getVerifyStatusAttribute()
-    // {
-    //     return $this->email_verified_at ? 'completed' : 'pending';
-    // }
+    public function getVerifyStatusAttribute()
+    {
+        return $this->email_verified_at ? 'completed' : 'pending';
+    }
 
     // User's favorites
     public function favorites()
@@ -49,7 +58,6 @@ class User extends Authenticatable
     // User's cart items
     public function cart()
     {
-            return $this->hasMany(\App\Models\Cart::class);
+        return $this->hasMany(\App\Models\Cart::class);
     }
 }
-

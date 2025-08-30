@@ -9,13 +9,15 @@ use App\Http\Controllers\Api\ProductSearchController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\DeliveryController;
+use App\Http\Controllers\ReviewController;
 
 // Auth
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
 Route::post('/send-otp', [AuthController::class, 'sendOtp']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
-
+Route::get('/products/{id}/reviews', [ReviewController::class, 'index']);
+Route::post('/products/{id}/reviews', [ReviewController::class, 'store'])->middleware('auth:sanctum');
 // Banners
 Route::apiResource('banners', BannerController::class)->except(['show']);
 
@@ -46,6 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/logout',  [AuthController::class, 'logout']);
     Route::get('/profile',  [AuthController::class, 'profile']);
+    Route::post('/profile/update', [AuthController::class, 'updateProfile']);
     Route::get('/user', fn(Request $request) => $request->user());
 
     // Favorites

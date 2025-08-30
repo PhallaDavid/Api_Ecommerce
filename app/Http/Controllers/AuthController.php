@@ -52,6 +52,58 @@ public function register(Request $request)
         'user'    => $user,
     ], 201);
 }
+public function updateProfile(Request $request)
+{
+    $user = $request->user();
+
+    // Validate input
+    $request->validate([
+        'name'    => 'sometimes|string|max:255',
+        'email'   => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
+        'phone'   => 'sometimes|string|max:20',
+        'address' => 'sometimes|string|max:500',
+        'city'    => 'sometimes|string|max:100',
+        'state'   => 'sometimes|string|max:100',
+        'zip'     => 'sometimes|string|max:20',
+        'avatar'  => 'sometimes|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        'images'  => 'sometimes|array',
+        'images.*'=> 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+    ]);
+
+    // Update basic info
+    $user->name    = $request->name ?? $user->name;
+    $user->email   = $request->email ?? $user->email;
+    $user->phone   = $request->phone ?? $user->phone;
+    $user->address = $request->address ?? $user->address;
+    $user->city    = $request->city ?? $user->city;
+    $user->state   = $request->state ?? $user->state;
+    $user->zip     = $request->zip ?? $user->zip;
+
+    // Handle avatar upload
+    if ($request->hasFile('avatar')) {
+        $avatarPath = $request->file('avatar')->store('avatars', 'public');
+        $user->avatar = '/storage/' . $avatarPath;
+    }
+
+    // Handle multiple images upload
+    if ($request->hasFile('images')) {
+        $imagePaths = [];
+        foreach ($request->file('images') as $image) {
+            $path = $image->store('user_images', 'public');
+            $imagePaths[] = '/storage/' . $path;
+        }
+        $user->images = $imagePaths;
+    }
+
+    $user->save();
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Profile updated successfully',
+        'user' => $user,
+    ]);
+}
+
     public function login(Request $request)
     {
         // Validate input
