@@ -18,10 +18,20 @@ class ProductController extends Controller
         return response()->json(Product::with('category')->get());
     }
 
-        public function show($id)
-        {
-            return response()->json(Product::with('category')->findOrFail($id));
+    public function show($id)
+    {
+        if (!is_numeric($id)) {
+            return response()->json(['message' => 'Product not found'], 404);
         }
+
+        $product = Product::with('category')->find($id);
+
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        return response()->json($product);
+    }
 
     public function productsByCategory($categoryId)
     {
@@ -225,7 +235,6 @@ class ProductController extends Controller
         ], 201);
     }
 
-
     // Remove product from favorites
     public function removeFavorite($productId)
     {
@@ -248,18 +257,21 @@ class ProductController extends Controller
         ], 200);
     }
 
-    // List all favorites for the logged-in user
     public function favorites(Request $request)
     {
         $user = $request->user();
 
-        $favorites = $user->favorites()->with('product')->get();
+        $favorites = $user->favorites()
+            ->whereHas('product') // only include existing products
+            ->with('product')
+            ->get();
 
         return response()->json([
             'message' => 'Favorites fetched successfully',
             'favorites' => $favorites
         ], 200);
     }
+
 
     public function addToCart(Request $request, $productId)
     {

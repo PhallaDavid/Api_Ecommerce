@@ -63,4 +63,42 @@ class OrderController extends Controller
             'order' => $order->load('items.product')
         ], 201);
     }
+    public function history(Request $request)
+    {
+        $user = $request->user();
+
+        // Get all orders with their items and product details
+        $orders = Order::where('user_id', $user->id)
+            ->with('items.product')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Order history fetched successfully',
+            'orders' => $orders
+        ], 200);
+    }
+    public function getOrderById($id)
+{
+    $user = auth()->user();
+
+    $order = Order::with('items.product')
+        ->where('user_id', $user->id) // make sure user can only see their own orders
+        ->find($id);
+
+    if (!$order) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Order not found',
+        ], 404);
+    }
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Order fetched successfully',
+        'order' => $order
+    ]);
+}
+
 }

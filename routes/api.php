@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -61,10 +62,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('products/{id}/cart', [ProductController::class, 'removeFromCart']);
     Route::get('/cart', [ProductController::class, 'cart']);
 });
-
-// Payments
 Route::post('/payments/create', [PaymentController::class, 'create']);
 Route::get('/payment/status/{md5}', [PaymentController::class, 'checkStatus']);
 
-// Create order (protected)
-Route::middleware('auth:sanctum')->post('/orders', [OrderController::class, 'createOrder']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/orders', [OrderController::class, 'createOrder']);
+    Route::get('/orders/history', [OrderController::class, 'history']);
+    Route::get('/orders/{id}', [OrderController::class, 'getOrderById']);
+});
